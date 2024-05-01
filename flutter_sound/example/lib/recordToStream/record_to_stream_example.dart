@@ -41,8 +41,10 @@ typedef _Fn = void Function();
 
 /// Example app.
 class RecordToStreamExample extends StatefulWidget {
+  const RecordToStreamExample({super.key});
+
   @override
-  _RecordToStreamExampleState createState() => _RecordToStreamExampleState();
+  State<RecordToStreamExample> createState() => _RecordToStreamExampleState();
 }
 
 class _RecordToStreamExampleState extends State<RecordToStreamExample> {
@@ -50,6 +52,8 @@ class _RecordToStreamExampleState extends State<RecordToStreamExample> {
   FlutterSoundRecorder? _mRecorder = FlutterSoundRecorder();
   bool _mPlayerIsInited = false;
   bool _mRecorderIsInited = false;
+  bool _mEnableVoiceProcessing = false;
+
   bool _mplaybackReady = false;
   String? _mPath;
   StreamSubscription? _mRecordingDataSubscription;
@@ -137,6 +141,7 @@ class _RecordToStreamExampleState extends State<RecordToStreamExample> {
       codec: Codec.pcm16,
       numChannels: 1,
       sampleRate: tSampleRate,
+      enableVoiceProcessing: _mEnableVoiceProcessing
     );
     setState(() {});
   }
@@ -203,60 +208,89 @@ class _RecordToStreamExampleState extends State<RecordToStreamExample> {
           Container(
             margin: const EdgeInsets.all(3),
             padding: const EdgeInsets.all(3),
-            height: 80,
+            height: 120,
             width: double.infinity,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Color(0xFFFAF0E6),
+              color: const Color(0xFFFAF0E6),
               border: Border.all(
                 color: Colors.indigo,
                 width: 3,
               ),
             ),
-            child: Row(children: [
+            child: Column(children: [ Row(children: [
               ElevatedButton(
                 onPressed: getRecorderFn(),
                 //color: Colors.white,
                 //disabledColor: Colors.grey,
                 child: Text(_mRecorder!.isRecording ? 'Stop' : 'Record'),
               ),
-              SizedBox(
+              const SizedBox(
                 width: 20,
               ),
               Text(_mRecorder!.isRecording
                   ? 'Recording in progress'
                   : 'Recorder is stopped'),
             ]),
+      Row(children: [
+      Checkbox(
+      checkColor: Colors.white,
+      //fillColor: Colors.white,
+      value: _mEnableVoiceProcessing,
+      onChanged: (bool? value) {
+      _mPlayer!.closePlayer().then((v) {
+      _mPlayerIsInited = false;
+      _mEnableVoiceProcessing = value!;
+      _mPlayer!.openPlayer();}).then((value) {
+      setState(() {
+      _mPlayerIsInited = true;
+      });
+      }
+
+      );
+      }
+      ),
+      const Text("EnableVoiceProcessing")
+
+      ]
+      ),
+      ]
+      ),
           ),
+
           Container(
             margin: const EdgeInsets.all(3),
             padding: const EdgeInsets.all(3),
-            height: 80,
+            height: 120,
             width: double.infinity,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Color(0xFFFAF0E6),
+              color: const Color(0xFFFAF0E6),
               border: Border.all(
                 color: Colors.indigo,
                 width: 3,
               ),
             ),
-            child: Row(children: [
+            child:
+
+             Row(children: [
               ElevatedButton(
                 onPressed: getPlaybackFn(),
                 //color: Colors.white,
                 //disabledColor: Colors.grey,
                 child: Text(_mPlayer!.isPlaying ? 'Stop' : 'Play'),
               ),
-              SizedBox(
+              const SizedBox(
                 width: 20,
               ),
               Text(_mPlayer!.isPlaying
                   ? 'Playback in progress'
                   : 'Player is stopped'),
-            ]),
+            ])
           ),
-        ],
+
+              ]
+
       );
     }
 

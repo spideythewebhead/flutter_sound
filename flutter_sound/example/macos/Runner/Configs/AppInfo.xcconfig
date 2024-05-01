@@ -8,7 +8,7 @@
 PRODUCT_NAME = example
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.dooboolab.example
+PRODUCT_BUNDLE_IDENTIFIER = xyz.canardoux.fluttersound.example
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2020 com.dooboolab. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2024 xyz.canardoux.fluttersound. All rights reserved.

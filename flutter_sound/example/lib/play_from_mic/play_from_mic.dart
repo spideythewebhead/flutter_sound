@@ -37,13 +37,16 @@ typedef Fn = void Function();
 
 /// Example app.
 class PlayFromMic extends StatefulWidget {
+  const PlayFromMic({super.key});
+
   @override
-  _PlayFromMicState createState() => _PlayFromMicState();
+  State<PlayFromMic> createState() => _PlayFromMicState();
 }
 
 class _PlayFromMicState extends State<PlayFromMic> {
   FlutterSoundPlayer? _mPlayer = FlutterSoundPlayer();
   bool _mPlayerIsInited = false;
+  bool _mEnableVoiceProcessing = false;
 
   Future<void> open() async {
     var status = await Permission.microphone.request();
@@ -98,7 +101,7 @@ class _PlayFromMicState extends State<PlayFromMic> {
   // -------  Here is the code to play from the microphone -----------------------
 
   void play() async {
-    await _mPlayer!.startPlayerFromMic();
+    await _mPlayer!.startPlayerFromMic(enableVoiceProcessing: _mEnableVoiceProcessing);
     setState(() {});
   }
 
@@ -129,32 +132,54 @@ class _PlayFromMicState extends State<PlayFromMic> {
           Container(
             margin: const EdgeInsets.all(3),
             padding: const EdgeInsets.all(3),
-            height: 80,
+            height: 120,
             width: double.infinity,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Color(0xFFFAF0E6),
+              color: const Color(0xFFFAF0E6),
               border: Border.all(
                 color: Colors.indigo,
                 width: 3,
               ),
             ),
-            child: Row(children: [
+            child: Column( children: [Row(children: [
               ElevatedButton(
                 onPressed: getPlaybackFn(),
                 //color: Colors.white,
                 //disabledColor: Colors.grey,
                 child: Text(_mPlayer!.isPlaying ? 'Stop' : 'Play'),
               ),
-              SizedBox(
+              const SizedBox(
                 width: 20,
               ),
               Text(_mPlayer!.isPlaying
                   ? 'Playing microphone to headset'
                   : 'Recorder is stopped'),
             ]),
-          ),
-        ],
+      Row(children: [
+      Checkbox(
+      checkColor: Colors.white,
+      //fillColor: Colors.white,
+      value: _mEnableVoiceProcessing,
+      onChanged: (bool? value) {
+      _mPlayer!.closePlayer().then((v) {
+      _mPlayerIsInited = false;
+      _mEnableVoiceProcessing = value!;
+      _mPlayer!.openPlayer();}).then((value) {
+      setState(() {
+      _mPlayerIsInited = true;
+      });
+      }
+
+      );
+      }
+      ),
+      const Text("EnableVoiceProcessing")
+
+      ]),
+],
+      ),
+          )],
       );
     }
 

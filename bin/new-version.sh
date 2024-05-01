@@ -15,69 +15,64 @@ bin/reldev.sh REL
 bin/web.sh
 
 cd flutter_sound
-dart analyze lib
+flutter analyze lib
 if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
+    echo "Error: analyze flutter_sound/lib"
+    #!!!!!exit -1
 fi
 dart format lib
 if [ $? -ne 0 ]; then
-    echo "Error"
+    echo "Error: format flutter_sound/lib"
     exit -1
 fi
 
 cd ..
-
-#cp -a -v flutter_sound_web/js/flutter_sound/* flutter_sound/example/web/js/flutter_sound
-
-#rm flutter_sound/Logotype\ primary.png
-#ln -s ../doc/flutter_sound/Logotype\ primary.png flutter_sound/
-#rm -rf flutter_sound_web/js
-#if [  -d flutter_sound_core/web/js ]; then
-#rm -rf flutter_sound_web/js
-#cp -a -v flutter_sound_core/web/js flutter_sound_web
-
-##rm -rf flutter_sound/example/web/js
-#cp -a -v flutter_sound_core/web/js flutter_sound/example/web
 rm -rf _*.tgz
-    
-    #ln -s ../flutter_sound_core/web/js flutter_sound_web/js
-#else
-#   ln -s ../tau_sound_core/web/js flutter_sound_web/js
-#fi
-
-
+ 
 cd flutter_sound_platform_interface/    
 #flutter clean
 #flutter pub get
+
+flutter analyze lib
+if [ $? -ne 0 ]; then
+    echo "Error: analyze flutter_sound_platform_interface/lib"
+    exit -1
+fi
+dart format lib
+if [ $? -ne 0 ]; then
+    echo "Error: format flutter_sound_platform_interface/lib"
+    exit -1
+fi
+
 flutter pub publish
 if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
+    echo "Error: flutter pub publish[flutter_sound_platform_interface]"
+    #!!!!!exit -1
 fi
 cd ..
 
 cd flutter_sound_web
 flutter clean
 flutter pub get
+
+flutter analyze lib
+if [ $? -ne 0 ]; then
+    echo "Error: analyze flutter_sound_web/lib"
+    exit -1
+fi
+dart format lib
+if [ $? -ne 0 ]; then
+    echo "Error: format flutter_sound_web/lib"
+    exit -1
+fi
+
 flutter pub publish
 if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
+    echo "Error: flutter pub publish[flutter_sound_web]"
+    #!!!!!!exit -1
 fi
 cd ..
 
-
-
-cd flutter_sound
-dart format  lib
-dart format  example/lib
-dart analyze lib
-if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
-fi
-cd ..
 
 
 
@@ -104,18 +99,11 @@ cd ..
 cd flutter_sound_core
 pod trunk push flutter_sound_core.podspec
 if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
+    echo "Error: trunk push flutter_sound_core.podspec[flutter_sound_core]"
+    #!!!!!exit -1
 fi
 cd ..
 
-#cd flutter_sound_core/android
-#./gradlew clean build bintrayUpload
-#if [ $? -ne 0 ]; then
-#    echo "Error"
-#    exit -1
-#fi
-#cd ../..
 
 
 git add .
@@ -140,15 +128,49 @@ cd ..
 
 cd flutter_sound_core/web
 npm publish .
+if [ $? -ne 0 ]; then
+    echo "Error: npm publish"
+    #!!!!!exit -1
+fi
 
 cd ../..
  
+
+
+cd flutter_sound
+
+flutter pub publish
+if [ $? -ne 0 ]; then
+    echo "Error: flutter pub publish[flutter_sound]"
+   #!!!!!!exit -1
+fi
+
+
+flutter analyze lib
+if [ $? -ne 0 ]; then
+    echo "Error: analyze flutter_sound/lib"
+    exit -1
+fi
+dart format lib
+if [ $? -ne 0 ]; then
+    echo "Error: format flutter_sound/lib"
+    exit -1
+fi
+dart format  example/lib
+cd ..
+
+
 cd flutter_sound
 #flutter clean
 #flutter pub get
-flutter pub publish
+flutter analyze lib
 if [ $? -ne 0 ]; then
-    echo "Error"
+    echo "Error: analyze flutter_sound/lib"
+    exit -1
+fi
+dart format lib
+if [ $? -ne 0 ]; then
+    echo "Error: format flutter_sound/lib"
     exit -1
 fi
 cd ..
@@ -156,29 +178,18 @@ cd ..
 
 
 cd flutter_sound
-flutter analyze lib
+dart doc lib
 if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
-fi
-#dartdoc lib
-if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
+    echo "Error: dart doc flutter_sound/lib"
+   #!!!!!exit -1
 fi
 rm -rf doc
 cd example
 flutter analyze lib
 if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
+    echo "Error: analyze flutter_sound/example/lib"
+    exit -1
 fi
-#dartdoc lib
-if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
-fi
-rm -rf doc
 cd ../..
 
 
@@ -200,15 +211,15 @@ pod install
 cd ..
 flutter build ios
 if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
+    echo "Error: flutter build flutter_sound/example/ios"
+    exit -1
 fi
 
 # Bug in flutter tools : if "flutter build --release" we must first "--debug" and then "--profile" before "--release"
-flutter build apk --debug
+flutter build apk --release
 if [ $? -ne 0 ]; then
-    echo "Error"
-    #exit -1
+    echo "Error: flutter build flutter_sound/example/apk"
+    exit -1
 fi
 
 cd ../..

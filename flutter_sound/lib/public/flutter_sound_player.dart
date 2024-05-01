@@ -34,9 +34,6 @@ import 'package:synchronized/synchronized.dart';
 
 import '../flutter_sound.dart';
 
-/// The default blocksize used when playing from Stream.
-const _blockSize = 4096;
-
 /// The possible states of the Player.
 enum PlayerState {
   /// Player is stopped
@@ -84,22 +81,23 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
   Logger _logger = Logger(level: Level.debug);
   Level _logLevel = Level.debug;
 
+  /// The default blocksize used when playing from Stream.
+  int _bufferSize = 8192;
+
   /// The FlutterSoundPlayerLogger Logger getter
   Logger get logger => _logger;
 
   /// Used if the App wants to dynamically change the Log Level.
   /// Seldom used. Most of the time the Log Level is specified during the constructor.
-  Future<void> setLogLevel(Level aLevel) async {
+  void setLogLevel(Level aLevel) async {
     _logLevel = aLevel;
     _logger = Logger(level: aLevel);
-    await _lock.synchronized(() async {
-      if (_isInited != Initialized.notInitialized) {
-        await FlutterSoundPlayerPlatform.instance.setLogLevel(
-          this,
-          aLevel,
-        );
-      }
-    });
+    if (_isInited != Initialized.notInitialized) {
+      FlutterSoundPlayerPlatform.instance.setLogLevel(
+        this,
+        aLevel,
+      );
+    }
   }
 
   final _lock = Lock();
@@ -222,7 +220,7 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
     }
 
     if (success) {
-      _closePlayerCompleter!.complete(this);
+      _closePlayerCompleter!.complete();
     } else {
       _closePlayerCompleter!.completeError('closePlayer failed');
     }
@@ -490,8 +488,7 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
   ///     await myPlayer.closePlayer();
   ///     myPlayer = null;
   /// ```
-  Future<FlutterSoundPlayer?> openPlayer(
-      {bool enableVoiceProcessing = false}) async {
+  Future<FlutterSoundPlayer?> openPlayer() async {
     //if (!Platform.isIOS && enableVoiceProcessing) {
     //throw ('VoiceProcessing is only available on iOS');
     //}
@@ -499,15 +496,14 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
     if (_isInited != Initialized.notInitialized) {
       return this;
     }
-    FlutterSoundPlayer? r;
+    Future<FlutterSoundPlayer?>? r;
     await _lock.synchronized(() async {
-      r = await _openAudioSession(enableVoiceProcessing: enableVoiceProcessing);
+      r = _openAudioSession();
     });
     return r;
   }
 
-  Future<FlutterSoundPlayer> _openAudioSession(
-      {bool enableVoiceProcessing = false}) async {
+  Future<FlutterSoundPlayer> _openAudioSession() async {
     _logger.d('FS:---> openAudioSession');
     while (_openPlayerCompleter != null) {
       _logger.w('Another openPlayer() in progress');
@@ -531,8 +527,8 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
     _openPlayerCompleter = Completer<FlutterSoundPlayer>();
     completer = _openPlayerCompleter;
     try {
-      var state = await FlutterSoundPlayerPlatform.instance.openPlayer(this,
-          logLevel: _logLevel, voiceProcessing: enableVoiceProcessing);
+      var state = await FlutterSoundPlayerPlatform.instance
+          .openPlayer(this, logLevel: _logLevel);
       _playerState = PlayerState.values[state];
       //isInited = success ?  Initialized.fullyInitialized : Initialized.notInitialized;
     } on Exception {
@@ -564,8 +560,8 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
   /// }
   /// ```
   Future<void> closePlayer() async {
-    await _lock.synchronized(() async {
-      await _closeAudioSession();
+    await _lock.synchronized(() {
+      return _closeAudioSession();
     });
   }
 
@@ -853,24 +849,28 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
   ///     ...
   ///     myPlayer.stopPlayer();
   /// ```
-  Future<void> startPlayerFromMic({
-    int sampleRate = 44000, // The default value is probably a good choice.
-    int numChannels =
-        1, // 1 for monophony, 2 for stereophony (actually only monophony is supported).
-  }) async {
+  Future<void> startPlayerFromMic(
+      {int sampleRate = 44000, // The default value is probably a good choice.
+      int numChannels =
+          1, // 1 for monophony, 2 for stereophony (actually only monophony is supported).
+      int bufferSize = 8192,
+      enableVoiceProcessing = false}) async {
     await _lock.synchronized(() async {
       await _startPlayerFromMic(
         sampleRate: sampleRate,
         numChannels: numChannels,
+        bufferSize: bufferSize,
+        enableVoiceProcessing: enableVoiceProcessing,
       );
     });
   }
 
-  Future<Duration> _startPlayerFromMic({
-    int sampleRate = 44000, // The default value is probably a good choice.
-    int numChannels =
-        1, // 1 for monophony, 2 for stereophony (actually only monophony is supported).
-  }) async {
+  Future<Duration> _startPlayerFromMic(
+      {int sampleRate = 44000, // The default value is probably a good choice.
+      int numChannels =
+          1, // 1 for monophony, 2 for stereophony (actually only monophony is supported).
+      int bufferSize = 8192,
+      enableVoiceProcessing = false}) async {
     _logger.d('FS:---> startPlayerFromMic ');
     await _waitOpen();
     if (_isInited != Initialized.fullyInitialized) {
@@ -886,9 +886,12 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
       _startPlayerCompleter = Completer<Duration>();
       completer = _startPlayerCompleter;
       var state = await FlutterSoundPlayerPlatform.instance.startPlayerFromMic(
-          this,
-          numChannels: numChannels,
-          sampleRate: sampleRate);
+        this,
+        numChannels: numChannels,
+        sampleRate: sampleRate,
+        bufferSize: bufferSize,
+        enableVoiceProcessing: enableVoiceProcessing,
+      );
       _playerState = PlayerState.values[state];
     } on Exception {
       _startPlayerCompleter = null;
@@ -939,12 +942,14 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
     Codec codec = Codec.pcm16,
     int numChannels = 1,
     int sampleRate = 16000,
+    int bufferSize = 8192,
   }) async {
     await _lock.synchronized(() async {
       await _startPlayerFromStream(
         codec: codec,
         sampleRate: sampleRate,
         numChannels: numChannels,
+        bufferSize: bufferSize,
       );
     });
   }
@@ -953,6 +958,7 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
     Codec codec = Codec.pcm16,
     int numChannels = 1,
     int sampleRate = 16000,
+    int bufferSize = 8192,
   }) async {
     _logger.d('FS:---> startPlayerFromStream ');
     await _waitOpen();
@@ -960,7 +966,7 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
       throw Exception('Player is not open');
     }
     Completer<Duration>? completer;
-
+    _bufferSize = bufferSize;
     await _stop(); // Just in case
     _foodStreamController = StreamController();
     _foodStreamSubscription = _foodStreamController!.stream.listen((food) {
@@ -973,12 +979,15 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
     try {
       _startPlayerCompleter = Completer<Duration>();
       completer = _startPlayerCompleter;
-      var state = await FlutterSoundPlayerPlatform.instance.startPlayer(this,
-          codec: codec,
-          fromDataBuffer: null,
-          fromURI: null,
-          numChannels: numChannels,
-          sampleRate: sampleRate);
+      var state = await FlutterSoundPlayerPlatform.instance.startPlayer(
+        this,
+        codec: codec,
+        fromDataBuffer: null,
+        fromURI: null,
+        numChannels: numChannels,
+        sampleRate: sampleRate,
+        bufferSize: bufferSize,
+      );
       _playerState = PlayerState.values[state];
     } on Exception {
       _startPlayerCompleter = null;
@@ -1014,7 +1023,7 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
     var lnData = 0;
     var totalLength = buffer.length;
     while (totalLength > 0 && !isStopped) {
-      var bsize = totalLength > _blockSize ? _blockSize : totalLength;
+      var bsize = totalLength > _bufferSize ? _bufferSize : totalLength;
       var ln = await _feed(buffer.sublist(lnData, lnData + bsize));
       assert(ln >= 0);
       lnData += ln;
@@ -1230,7 +1239,7 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
   }
 
   Future<void> _seekToPlayer(Duration duration) async {
-    _logger.v('FS:---> seekToPlayer ');
+    _logger.t('FS:---> seekToPlayer ');
     await _waitOpen();
     if (_isInited != Initialized.fullyInitialized) {
       throw Exception('Player is not open');
@@ -1240,7 +1249,7 @@ class FlutterSoundPlayer implements FlutterSoundPlayerCallback {
       duration: duration,
     );
     _playerState = PlayerState.values[state];
-    _logger.v('FS:<--- seekToPlayer ');
+    _logger.t('FS:<--- seekToPlayer ');
   }
 
   /// Change the output volume

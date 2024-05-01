@@ -7,6 +7,48 @@ permalink: changelog.html
 summary: The Changelog of The &tau; Project.
 toc: false
 ---
+## 9.4.6
+
+- Fixes some warning inside the example 'LivePlaybackWithoutBackPressure'
+
+## 9.4.5
+
+- Debug traces from iOS FlutterSoundRecorder had an incorrect parameter. Merge PR [980](https://github.com/Canardoux/flutter_sound/pull/980)
+- Fixes a memory leak on Android PR [#949](https://github.com/Canardoux/flutter_sound/pull/949)
+- Fixes recorder is not logging native debug messages PR [#980](https://github.com/Canardoux/flutter_sound/pull/980)
+- Implement setSpeed() for startPlayerFromStream, both on iOS and Android. PR [#945](https://github.com/Canardoux/flutter_sound/pull/945). Thanks to @acalatrava for his contribution.
+- startPlayerFromStream() has a new parameter : 'bufferSize'. This parameter is used on Android. The default value is 8192.
+- startPlayerFromMic has a new parameter : 'bufferSize'. This parameter is used on Android and iOS. The default value is 8192.
+- startPlayer() has a new parameter : 'bufferSize'. This parameter is used on Android when playing Raw PCM. The default value is 8192.
+- startRecorder() has a new parameter : 'bufferSize'. This parameter is usend on Android and iOS when recording to stream. PR [905](https://github.com/Canardoux/flutter_sound/pull/905/files). Thanks to @ebraraktas for his contribution
+- setVolume() is now correctely implemented for playFromStream() on iOS. PR [#945](https://github.com/Canardoux/flutter_sound/pull/945). Thank you to @acalatrava for his contribution.
+- Add a slider "Speed" in LivePlayback without backpressure" example to test if setSpeed is now correctely handled.
+- Fixes bug [1021](https://github.com/Canardoux/flutter_sound/issues/1021) : Namespace not specified. Specify a namespace in the module's build file.
+- Removes the parameter "enableVoiceParameter" from startPlayer()
+- Add the parameter "enableVoiceParameter" to the verb "StartPlayerFromMic()"
+- Add the parameter "enableVoiceParameter" to the verb "StartRecorderFromStream"
+
+## 9.3.8
+
+- closePlayer() and closeRecorder was awaiting instead of returning a Future<void>
+- Merge PR [#1000](https://github.com/Canardoux/flutter_sound/pull/1000) : Enable Voice Processing on iOS
+- Fix the Demo Example "Play remote file With Codec=FLAC" [#1017](https://github.com/Canardoux/flutter_sound/issues/1017)
+- Add a checkbox "EnableVoiceProcessing" in RecordToStream example to test if this parameter is correctly handled
+- Add a checkbox "EnableVoiceProcessing" in LivePlayback without backpressure" example to test if this parameter is correctly handled
+
+## 9.3.7
+
+- SetLevel is not async : [#1006](https://github.com/Canardoux/flutter_sound/pull/1006), [#1012](https://github.com/Canardoux/flutter_sound/pull/1012)
+- The various Assets inside Example/Demo was declared with a bad path to Canardoux : [#1006](https://github.com/Canardoux/flutter_sound/pull/1011), [#998](https://github.com/Canardoux/flutter_sound/pull/1011)
+
+## 9.3.6
+
+- Link with "logger: ^2.0.2" : [#1006](https://github.com/Canardoux/flutter_sound/pull/1006), [#998](https://github.com/Canardoux/flutter_sound/pull/998)
+- Link with "uuid: ^4.3.3" : [#1006](https://github.com/Canardoux/flutter_sound/pull/1006), [#998](https://github.com/Canardoux/flutter_sound/pull/998)
+- environment sdk version is now : sdk: ^3.3.0
+- Fixes many warnings during build
+- Fixes a bug in openPlayer and openRecorder : The functionn awaited on the completion instead of returning a Future of the Player/Recorder
+
 ## 9.2.13
 
 - Remove static variables `flutterSoundPlayermanager*` and `flutterSoundRecorderManager*` [#895](https://github.com/Canardoux/flutter_sound/issues/895). Static variables are total evil!.

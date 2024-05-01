@@ -54,22 +54,25 @@ typedef Fn = void Function();
 
 /// Example app.
 class LivePlaybackWithoutBackPressure extends StatefulWidget {
+  const LivePlaybackWithoutBackPressure({super.key});
+
   @override
-  _LivePlaybackWithoutBackPressureState createState() =>
+  State<LivePlaybackWithoutBackPressure> createState() =>
       _LivePlaybackWithoutBackPressureState();
 }
 
 class _LivePlaybackWithoutBackPressureState
     extends State<LivePlaybackWithoutBackPressure> {
-  FlutterSoundPlayer? _mPlayer = FlutterSoundPlayer();
+  final FlutterSoundPlayer _mPlayer = FlutterSoundPlayer();
   bool _mPlayerIsInited = false;
+  double _mSpeed = 100.0;
 
   @override
   void initState() {
     super.initState();
     // Be careful : openAudioSession return a Future.
     // Do not access your FlutterSoundPlayer or FlutterSoundRecorder before the completion of the Future
-    _mPlayer!.openPlayer().then((value) {
+    _mPlayer.openPlayer().then((value) {
       setState(() {
         _mPlayerIsInited = true;
       });
@@ -79,9 +82,7 @@ class _LivePlaybackWithoutBackPressureState
   @override
   void dispose() {
     stopPlayer();
-    _mPlayer!.closePlayer();
-    _mPlayer = null;
-
+    _mPlayer.closePlayer();
     super.dispose();
   }
 
@@ -90,31 +91,32 @@ class _LivePlaybackWithoutBackPressureState
   void feedHim(Uint8List data) {
     var start = 0;
     var totalLength = data.length;
-    while (totalLength > 0 && _mPlayer != null && !_mPlayer!.isStopped) {
+    while (totalLength > 0 && !_mPlayer.isStopped) {
       var ln = totalLength > tBlockSize ? tBlockSize : totalLength;
-      _mPlayer!.foodSink!.add(FoodData(data.sublist(start, start + ln)));
+      _mPlayer.foodSink!.add(FoodData(data.sublist(start, start + ln)));
       totalLength -= ln;
       start += ln;
     }
   }
 
   void play() async {
-    assert(_mPlayerIsInited && _mPlayer!.isStopped);
-    await _mPlayer!.startPlayerFromStream(
+    assert(_mPlayerIsInited && _mPlayer.isStopped);
+    await _mPlayer.startPlayerFromStream(
       codec: Codec.pcm16,
       numChannels: 1,
       sampleRate: tSampleRate,
+      bufferSize: 100000,
     );
     setState(() {});
     var data = await getAssetData('assets/samples/sample.pcm');
     feedHim(data);
-    if (_mPlayer != null) {
+    //if (_mPlayer != null) {
       // We must not do stopPlayer() directely //await stopPlayer();
-      _mPlayer!.foodSink!.add(FoodEvent(() async {
-        await _mPlayer!.stopPlayer();
+      _mPlayer.foodSink!.add(FoodEvent(() async {
+        await _mPlayer.stopPlayer();
         setState(() {});
       }));
-    }
+    //}
   }
 
   // --------------------- (it was very simple, wasn't it ?) -------------------
@@ -125,16 +127,28 @@ class _LivePlaybackWithoutBackPressureState
   }
 
   Future<void> stopPlayer() async {
-    if (_mPlayer != null) {
-      await _mPlayer!.stopPlayer();
-    }
+    //if (_mPlayer != null) {
+      await _mPlayer.stopPlayer();
+    //}
   }
+
+
+  Future<void> setSpeed(double v) async // v is between 0.0 and 100.0
+      {
+    v = v > 200.0 ? 200.0 : v;
+    _mSpeed = v;
+    setState(() {});
+    await _mPlayer.setSpeed(
+      v / 100,
+    );
+  }
+
 
   Fn? getPlaybackFn() {
     if (!_mPlayerIsInited) {
       return null;
     }
-    return _mPlayer!.isStopped
+    return _mPlayer.isStopped
         ? play
         : () {
             stopPlayer().then((value) => setState(() {}));
@@ -151,32 +165,47 @@ class _LivePlaybackWithoutBackPressureState
           Container(
             margin: const EdgeInsets.all(3),
             padding: const EdgeInsets.all(3),
-            height: 80,
+            height: 180,
             width: double.infinity,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Color(0xFFFAF0E6),
+              color: const Color(0xFFFAF0E6),
               border: Border.all(
                 color: Colors.indigo,
                 width: 3,
               ),
             ),
-            child: Row(children: [
+            child: Column(children: [Row(children: [
               ElevatedButton(
                 onPressed: getPlaybackFn(),
                 //color: Colors.white,
                 //disabledColor: Colors.grey,
-                child: Text(_mPlayer!.isPlaying ? 'Stop' : 'Play'),
+                child: Text(_mPlayer.isPlaying ? 'Stop' : 'Play'),
               ),
-              SizedBox(
+              const SizedBox(
                 width: 20,
               ),
-              Text(_mPlayer!.isPlaying
+              Text(_mPlayer.isPlaying
                   ? 'Playback in progress'
                   : 'Player is stopped'),
             ]),
-          ),
-        ],
+               const Text('Speed:'),
+              Slider(
+                value: _mSpeed,
+                min: 0.0,
+                max: 200.0,
+                onChanged: setSpeed,
+                //divisions: 100
+              ),
+
+            ]
+             ),
+
+
+
+         ),
+        ]
+
       );
     }
 

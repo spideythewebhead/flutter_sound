@@ -64,17 +64,15 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
 
   /// Used if the App wants to dynamically change the Log Level.
   /// Seldom used. Most of the time the Log Level is specified during the constructor.
-  Future<void> setLogLevel(Level aLevel) async {
+  void setLogLevel(Level aLevel) {
     _logLevel = aLevel;
     _logger = Logger(level: aLevel);
-    await _lock.synchronized(() async {
-      if (_isInited != Initialized.notInitialized) {
-        await FlutterSoundRecorderPlatform.instance.setLogLevel(
-          this,
-          aLevel,
-        );
-      }
-    });
+    if (_isInited != Initialized.notInitialized) {
+      FlutterSoundRecorderPlatform.instance.setLogLevel(
+        this,
+        aLevel,
+      );
+    }
   }
 
   /// Locals
@@ -368,10 +366,10 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
       return this;
     }
 
-    FlutterSoundRecorder? r;
+    Future<FlutterSoundRecorder?>? r;
     _logger.d('FS:---> openAudioSession ');
     await _lock.synchronized(() async {
-      r = await _openAudioSession();
+      r = _openAudioSession();
     });
     _logger.d('FS:<--- openAudioSession ');
     return r;
@@ -419,11 +417,9 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
   /// Delete all the temporary files created with `startRecorder()`
 
   Future<void> closeRecorder() async {
-    _logger.d('FS:---> closeAudioSession ');
-    await _lock.synchronized(() async {
-      await _closeAudioSession();
+    await _lock.synchronized(() {
+      return _closeAudioSession();
     });
-    _logger.d('FS:<--- closeAudioSession ');
   }
 
   Future<void> _closeAudioSession() async {
@@ -585,6 +581,8 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
     int sampleRate = 16000,
     int numChannels = 1,
     int bitRate = 16000,
+    int bufferSize = 8192,
+    bool enableVoiceProcessing = false,
     AudioSource audioSource = AudioSource.defaultSource,
   }) async {
     _logger.d('FS:---> startRecorder ');
@@ -596,6 +594,8 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
         sampleRate: sampleRate,
         numChannels: numChannels,
         bitRate: bitRate,
+        bufferSize: bufferSize,
+        enableVoiceProcessing: enableVoiceProcessing,
         audioSource: audioSource,
       );
     });
@@ -609,6 +609,8 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
     int sampleRate = 16000,
     int numChannels = 1,
     int bitRate = 16000,
+    int bufferSize = 8192,
+    bool enableVoiceProcessing = false,
     AudioSource audioSource = AudioSource.defaultSource,
   }) async {
     _logger.d('FS:---> _startRecorder.');
@@ -673,6 +675,8 @@ class FlutterSoundRecorder implements FlutterSoundRecorderCallback {
           sampleRate: sampleRate,
           numChannels: numChannels,
           bitRate: bitRate,
+          bufferSize: bufferSize,
+          enableVoiceProcessing: enableVoiceProcessing,
           codec: codec,
           toStream: toStream != null,
           audioSource: audioSource);
